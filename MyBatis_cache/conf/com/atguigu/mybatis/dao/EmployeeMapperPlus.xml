@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.atguigu.mybatis.dao.EmployeeMapperPlus">
+	<!-- 
+		resultMap:自定义结果集映射规则
+		type:自定义规则的java类型
+		id:唯一id引用
+	 -->
+	 <!-- 自定义某个javabean的封装规则 -->
+	<resultMap type="com.atguigu.mybatis.bean.Employee" id="MySimpleEmp">
+		<!--
+			指定 主键列的封装规则
+			id:定义主键,底层会有优化
+			column:指定那一列
+			property:指定对应的javabean属性
+		 -->
+		<id column="id" property="id"/>
+		<!-- 定义普通列封装规则 -->
+		<result column="last_name" property="lastName"/>
+		<!-- 其它不指定的列会自动封装，列名和属性名向对应，我们只要写resultMap就把全部的映射规则都写上 -->
+		<result column="email" property="email"/>
+		<result column="gender" property="gender"/>
+	</resultMap>
+	<!-- public Employee getEmpById(Integer id); -->
+	<select id="getEmpById" resultMap="MySimpleEmp">
+		select * from employee where id=#{id}
+	</select>
+	
+	<!-- 
+		場景一：
+			查询Employee的同时查询员工对应的部门
+			Employee===Department
+			一个员工有与之对应的部门信息
+			id last_name gender did email dept_name
+	 -->
+	 
+	 <!-- 
+	 	联合查询：级联属性封装结果集
+	  -->
+	 <resultMap type="com.atguigu.mybatis.bean.Employee" id="MyDifEmp">
+	 	<id column="id" property="id"/>
+	 	<result column="last_name" property="lastName"/>
+	 	<result column="did" property="dept.id"/>
+	 	<result column="dept_name" property="dept.departmentName"/>
+	 </resultMap>
+	 <!-- 
+	 	使用association来定义对象属性类的封装规则
+	 	关联单个对象
+	  -->
+	 <resultMap type="com.atguigu.mybatis.bean.Employee" id="MyDifEmp2">
+	 	<id column="id" property="id"/>
+	 	<result column="last_name" property="lastName"/>
+	 	<!--
+	 		 association可以指定联合的javabean对象
+	 		 property="dept":那个属性是联合的对象
+	 		 javaType="com.atguigu.mybatis.bean.Department":指定这个属性对象的类型[不能省略]
+	 	 -->
+	 	<association property="dept" javaType="com.atguigu.mybatis.bean.Department">
+	 		<id column="did" property="id"/>
+	 		<result column="dept_name" property="departmentName"/>
+	 	</association>
+	 </resultMap>
+	 
+	 <!--   使用association进行分布查询
+	 	1.按照员工idc查询员工信息
+	 	2.根据查出员工信息的d_id值去部门表查部门信息
+	 	3.查出的部门设置到员工里面去	
+	  -->
+	  <resultMap type="com.atguigu.mybatis.bean.Employee" id="MyEmpByStep">
+	  		<id column="id" property="id" />
+	  		<result column="last_name" property="lastName"/>
+			<!--
+				association定义关联对象的封装规则
+				select:表明当前的这个属性是调用select这个方法查出的结果
+				column:指定将那一列的值传递给association相关联的对象
+				
+				流程:使用select指定的方法(传入column指定的这列参数值)查出对象，并封装给property指定的参数值
+			 -->
+			<association property="dept" select="com.atguigu.mybatis.dao.DepartmentMapper.getDeptById" column="d_id">			
+			</association>
+	  </resultMap>
+	  
+	  <!-- 
+		<discriminator javaType=""></discriminator>
+		鉴别器：mybatis可以使用discriminator判断某列的值，然后根据某列的值改变封装行为
+		封装Employee:
+			如果查出的是女生：就把部门信息查询出来，否贼不查询
+			如果是男生：把last_name这一列的值赋值给email
+	 -->
+		<resultMap type="com.atguigu.mybatis.bean.Employee" id="MyEmpDis">
+			<id column="id" property="id"/>
+			<result column="last_name" property="lastName"/>
+			<result column="email" property="email"/>
+			<result column="gender" property="gender"/>
+		 	<!-- 
+		 		column:指定判断的列名
+		 		javaType:列值对应的java类型 string是String类型的别名
+		 	 -->
+	 		<discriminator javaType="string" column="gender">
+	 		<!-- 女生 resultType:指定封装的结果类型
+	 			resultType和resultMap二选一，必须选择一个
+	 		-->
+		 		<case value="f" resultType="com.atguigu.mybatis.bean.Employee">
+			 		<association property="dept" select="com.atguigu.mybatis.dao.DepartmentMapper.getDeptById" column="d_id">
+					</association>
+		 		</case>
+		 		<!-- 男生 -->
+		 		<case value="m" resultType="com.atguigu.mybatis.bean.Employee">
+		 			<id column="id" property="id"/>
+					<result column="last_name" property="lastName"/>
+					<result column="gender" property="gender"/>
+			 		<result column="last_name" property="email"/>
+		 		</case>
+	 		</discriminator>
+		</resultMap>
+	  
+	  
+	  <!-- public Employee getEmpByIdStep(Integer id); -->
+	  <select id="getEmpByIdStep" resultMap="MyEmpDis">
+	  		select * from employee where id=#{id}
+	  </select>
+	  
+	  <!-- 
+	  		可以使用延迟加载
+	  		Employee==>Dept
+	  			我们每次查询Employeed对象的时候,都将一起查询出来
+	  			部门信息在我们使用的时候就查出来
+	  			分段查询的基础之上加上两个配置
+	   -->
+	 <!-- public Employee getEmpAndDept(Integer id); -->
+	 <select id="getEmpAndDept" resultMap="MyDifEmp2">
+	 	select a.id id,a.last_name last_name,
+	 	a.gender gender,a.d_id did,a.email email,
+	 	b.dept_name dept_name from employee a,
+	 	department b where a.d_id = b.id and a.id=#{id}
+	 </select>
+	 
+	 <!-- ================association==================== -->
+	 <!-- 
+	 	场景二:
+	 		查询部门的时候将部门对应的所有员工信息都查询出来,注释在DepartmentMapper.xml中
+	 	
+	  -->
+	  
+	  <!-- public List<Employee> getEmpsByDeptId(Integer id); -->
+	  
+	  <select id="getEmpsByDeptId" resultType="com.atguigu.mybatis.bean.Employee">
+	  		select * from employee where d_id=#{deptId}
+	  </select>
+	  
+</mapper>	

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mapper.UserMapper">
+	<!-- int addUser(UserInfo user);
+
+	int delUserById(int id);
+
+	int updateUser(UserInfo user);
+
+	int getUserById(int id);
+
+	List<UserInfo> getAllUserInfo(); -->
+	
+	<select id="addUser" parameterType="com.beans.UserInfo" resultType="int">
+		insert into UserInfo(id,userName,password,note) values(#{id},#{userName},#{password},#{note})
+	</select>
+	<delete id="delUserById" parameterType="int">
+		delete from userInfo where id = #{id}
+	</delete>
+	<select id="getUserById" parameterType="int" resultType="com.beans.UserInfo">
+		select * from userInfo where id = #{id}
+	</select>
+	<update id="updateUser" parameterType="com.beans.UserInfo">
+		update userInfo set userName = #{userName},password = #{password}, note=#{note} where id = #{id}
+	</update>
+	<select id="getAllUserInfo" resultType="com.beans.UserInfo">
+		select * from userInfo
+	</select>
+</mapper>

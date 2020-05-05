@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<!-- 1.mybatis可以使用properties来引入properties配置文件中的内容 resource:引入类路径下的资源 url:引入网络路径或磁盘路径下的资源 -->
+	<properties resource="dbconfig.properties"></properties>
+	<settings>
+		<!-- 打印查询语句 -->
+		<!-- <setting name="logImpl" value="STDOUT_LOGGING" /> -->
+		<setting name="jdbcTypeForNull" value="NULL" />
+	</settings>
+	<typeAliases>
+		<package name="com.atguigu.mybatis.bean" />
+	</typeAliases>
+	<!-- 将插件注册在全局配置文件中 -->
+	<plugins>
+		<plugin interceptor="com.atguigu.mybatis.dao.MyFirstPlugin">
+			<property name="username" value="root"></property>
+			<property name="password" value="123456"></property>
+		</plugin>
+		<plugin interceptor="com.atguigu.mybatis.dao.MySecondPlugin">
+		</plugin>
+	</plugins>
+	<environments default="dev_mysql">
+		<environment id="dev_oracle">
+			<transactionManager type="JDBC"></transactionManager>
+			<dataSource type="POOLED">
+				<property name="driver" value="${orcl.driver}" />
+				<property name="url" value="${orcl.url}" />
+				<property name="username" value="${orcl.username}" />
+				<property name="password" value="${orcl.password}" />
+			</dataSource>
+		</environment>
+		<environment id="dev_mysql">
+			<transactionManager type="JDBC" />
+			<dataSource type="POOLED">
+				<property name="driver" value="${jdbc.driver}" />
+				<property name="url" value="${jdbc.url}" />
+				<property name="username" value="${jdbc.username}" />
+				<property name="password" value="${jdbc.password}" />
+			</dataSource>
+		</environment>
+	</environments>
+
+	<mappers>
+		<package name="com.atguigu.mybatis.dao" />
+	</mappers>
+
+</configuration>
